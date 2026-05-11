@@ -1,10 +1,16 @@
 import socket
-import os
+import subprocess
+import argparse
 
 HOST = "127.0.0.1"
 PORT = 7334
 
-commands = ['ls', 'get', 'rm']
+
+def send_command(command):
+    output = subprocess.check_output([command])
+    return output
+
+commands = ['ls', 'get', 'del']
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
@@ -14,10 +20,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         print(f"Connected by {addr}")
 
         while True:
-            command = conn.recv(1024).decode('utf-8')
-            if not command:
+            data = conn.recv(1024)
+            if not data:
                 break
+
+            command = data.decode('utf-8').strip()
+
             if command not in commands:
-                print(f"Please select a valid command: {", ".join(commands)}")
+                joined = ", ".join(commands)
+                conn.send(f"Please select a valid command: {joined}\n".encode('utf-8'))
             elif command == 'ls':
-                os.system('ls')
+                conn.send(send_command('ls'))
